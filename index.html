@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anæstesi Hovedregning Pro - 3 Forsøg</title>
+    <title>Anæstesi Hovedregning Pro</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #121212; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; transition: transform 0.1s; }
@@ -13,13 +13,17 @@
         .streak { font-weight: bold; color: #2ecc71; font-size: 1.2rem; }
         .attempts-ui { font-weight: bold; color: #f1c40f; font-size: 1.2rem; }
         
-        .status-text { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 15px; height: 15px; }
+        .status-text { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 10px; height: 15px; }
+
+        /* How-To Guide CSS */
+        .how-to-guide { background: #2c3e50; border-left: 4px solid #f1c40f; padding: 10px 15px; border-radius: 4px; font-size: 0.85rem; color: #bdc3c7; margin-bottom: 15px; line-height: 1.4; }
+        .how-to-guide strong { color: #ffffff; display: block; margin-bottom: 5px; font-size: 0.9rem; }
         
         /* Timer CSS */
         #timer-container { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-bottom: 20px; border: 1px solid #444; }
         #timer-bar { width: 100%; height: 100%; background: #3498db; transition: width 0.1s linear, background-color 0.3s; }
         
-        .patient-box { background: #2c3e50; text-align: center; padding: 20px; border-radius: 8px; font-size: 1.5rem; margin-bottom: 20px; border: 1px solid #4facfe; }
+        .patient-box { background: #1a252f; text-align: center; padding: 20px; border-radius: 8px; font-size: 1.5rem; margin-bottom: 20px; border: 1px solid #4facfe; }
         .step { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #aaa; }
         input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 1.1rem; box-sizing: border-box; }
@@ -28,7 +32,6 @@
         input.error { border-color: #e74c3c; background: #3a1c1c; color: #e74c3c; }
         input.success { border-color: #2ecc71; background: #1c3a24; color: #2ecc71; }
         
-        /* Visuel straf animation */
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
@@ -49,6 +52,14 @@
         </div>
         
         <div class="status-text" id="statusText">Opvarmning (Ingen tidsgrænse)</div>
+
+        <div class="how-to-guide">
+            <strong>Metode: (Højde - 100) × 7</strong>
+            1. Find tallet over 100 cm.<br>
+            2. Gang tierne med 7 (fx 70 × 7 = 490).<br>
+            3. Gang enerne med 7 (fx 4 × 7 = 28).<br>
+            4. Læg de to tal sammen for totalen.
+        </div>
         
         <div id="timer-container">
             <div id="timer-bar"></div>
@@ -172,7 +183,6 @@
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     if (parseInt(this.value) === getExpectedValue(index)) {
-                        // Korrekt svar
                         this.classList.remove('error');
                         this.classList.add('success');
                         this.disabled = true;
@@ -187,7 +197,6 @@
                             setTimeout(initGame, 400);
                         }
                     } else {
-                        // Forkert svar - trækker et forsøg
                         attemptsLeft--;
                         attemptsUI.innerText = attemptsLeft;
                         
@@ -195,14 +204,12 @@
                         setTimeout(() => appContainer.classList.remove('shake-active'), 400);
 
                         if (attemptsLeft > 0) {
-                            // Recoverable error - Ryd feltet, men bevar fokus og lad uret køre
                             this.classList.add('error');
                             setTimeout(() => {
                                 this.classList.remove('error');
                                 this.value = '';
                             }, 300);
                         } else {
-                            // Hard fail - Ingen forsøg tilbage
                             clearInterval(timerInterval);
                             failState("3 forkerte forsøg på én patient.");
                         }
