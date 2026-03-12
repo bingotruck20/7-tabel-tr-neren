@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anæstesi Hovedregning Pro - Adaptiv Stress</title>
+    <title>Anæstesi Hovedregning Pro - 3 Forsøg</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #121212; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; transition: transform 0.1s; }
         h1 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; color: #4facfe; }
-        .streak { text-align: center; font-weight: bold; color: #2ecc71; margin-bottom: 5px; font-size: 1.2rem; }
+        
+        .stats-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .streak { font-weight: bold; color: #2ecc71; font-size: 1.2rem; }
+        .attempts-ui { font-weight: bold; color: #f1c40f; font-size: 1.2rem; }
+        
         .status-text { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 15px; height: 15px; }
         
         /* Timer CSS */
@@ -38,7 +42,12 @@
 <body>
     <div class="container" id="app-container">
         <h1>Adaptiv Dosisberegning</h1>
-        <div class="streak">🔥 Streak: <span id="streakCount">0</span></div>
+        
+        <div class="stats-header">
+            <div class="streak">🔥 Streak: <span id="streakCount">0</span></div>
+            <div class="attempts-ui">❤️ <span id="attemptsCount">3</span>/3</div>
+        </div>
+        
         <div class="status-text" id="statusText">Opvarmning (Ingen tidsgrænse)</div>
         
         <div id="timer-container">
@@ -56,8 +65,8 @@
     </div>
 
     <script>
-        let hMinus100 = 0, tens = 0, ones = 0, streak = 0;
-        let currentTimeLimit = 12000; // Starttid for pres (12 sekunder)
+        let hMinus100 = 0, tens = 0, ones = 0, streak = 0, attemptsLeft = 3;
+        let currentTimeLimit = 12000;
         let timeLeft = 0;
         let timerInterval;
 
@@ -70,8 +79,8 @@
         const timerBar = document.getElementById('timer-bar');
         const statusText = document.getElementById('statusText');
         const appContainer = document.getElementById('app-container');
+        const attemptsUI = document.getElementById('attemptsCount');
 
-        // Dynamisk tidsudregning: Reducerer tiden med 0.5 sek pr streak efter 5 (Min 6 sekunder)
         function calculateTimeLimit() {
             if (streak < 5) return 12000; 
             const reduction = (streak - 5) * 500;
@@ -82,17 +91,15 @@
             clearInterval(timerInterval);
             
             if (streak < 5) {
-                // Opvarmningsfase
                 statusText.innerText = `Opvarmning: ${5 - streak} tilbage til skarp test`;
                 timerBar.style.width = '100%';
-                timerBar.style.background = '#3498db'; // Stationær blå
+                timerBar.style.background = '#3498db';
                 return;
             }
 
-            // Aktiv stressfase
             currentTimeLimit = calculateTimeLimit();
             timeLeft = currentTimeLimit;
-            statusText.innerText = `AKTIV: ${(currentTimeLimit/1000).toFixed(1)} sekunder pr. patient`;
+            statusText.innerText = `AKTIV: ${(currentTimeLimit/1000).toFixed(1)} sek pr. patient`;
             statusText.style.color = '#e74c3c';
             updateTimerVisuals();
             
@@ -123,12 +130,11 @@
             
             inputs.forEach(input => { if(!input.disabled) input.classList.add('error'); });
             
-            // Visuel straf
             appContainer.classList.add('shake-active');
             setTimeout(() => appContainer.classList.remove('shake-active'), 400);
             
             setTimeout(() => {
-                alert("Fejl: " + reason + "\nStreak nulstillet til opvarmning.");
+                alert("Kritisk Fejl: " + reason + "\nStreak nulstillet til opvarmning.");
                 initGame();
             }, 500);
         }
@@ -138,8 +144,10 @@
             hMinus100 = currentHeight - 100;
             tens = Math.floor(hMinus100 / 10) * 10; 
             ones = hMinus100 % 10;
+            attemptsLeft = 3;
 
             document.getElementById('heightDisplay').innerText = currentHeight;
+            attemptsUI.innerText = attemptsLeft;
 
             inputs.forEach((input, index) => {
                 input.value = '';
@@ -164,6 +172,7 @@
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     if (parseInt(this.value) === getExpectedValue(index)) {
+                        // Korrekt svar
                         this.classList.remove('error');
                         this.classList.add('success');
                         this.disabled = true;
@@ -175,11 +184,28 @@
                             clearInterval(timerInterval);
                             streak++;
                             document.getElementById('streakCount').innerText = streak;
-                            setTimeout(initGame, 400); // Hurtigere progression
+                            setTimeout(initGame, 400);
                         }
                     } else {
-                        clearInterval(timerInterval);
-                        failState("Forkert beregning");
+                        // Forkert svar - trækker et forsøg
+                        attemptsLeft--;
+                        attemptsUI.innerText = attemptsLeft;
+                        
+                        appContainer.classList.add('shake-active');
+                        setTimeout(() => appContainer.classList.remove('shake-active'), 400);
+
+                        if (attemptsLeft > 0) {
+                            // Recoverable error - Ryd feltet, men bevar fokus og lad uret køre
+                            this.classList.add('error');
+                            setTimeout(() => {
+                                this.classList.remove('error');
+                                this.value = '';
+                            }, 300);
+                        } else {
+                            // Hard fail - Ingen forsøg tilbage
+                            clearInterval(timerInterval);
+                            failState("3 forkerte forsøg på én patient.");
+                        }
                     }
                 }
             });
