@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anæstesi Hovedregning Pro</title>
+    <title>Anæstesi Hovedregning Pro - Numpad Auto</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #121212; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; transition: transform 0.1s; }
@@ -15,18 +15,21 @@
         
         .status-text { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 10px; height: 15px; }
 
-        /* How-To Guide CSS */
         .how-to-guide { background: #2c3e50; border-left: 4px solid #f1c40f; padding: 10px 15px; border-radius: 4px; font-size: 0.85rem; color: #bdc3c7; margin-bottom: 15px; line-height: 1.4; }
         .how-to-guide strong { color: #ffffff; display: block; margin-bottom: 5px; font-size: 0.9rem; }
         
-        /* Timer CSS */
         #timer-container { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-bottom: 20px; border: 1px solid #444; }
         #timer-bar { width: 100%; height: 100%; background: #3498db; transition: width 0.1s linear, background-color 0.3s; }
         
         .patient-box { background: #1a252f; text-align: center; padding: 20px; border-radius: 8px; font-size: 1.5rem; margin-bottom: 20px; border: 1px solid #4facfe; }
         .step { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #aaa; }
-        input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 1.1rem; box-sizing: border-box; }
+        
+        /* Fjernelse af pile i number inputs for renere UI */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        
+        input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 1.1rem; box-sizing: border-box; text-align: center;}
         input:focus { outline: none; border-color: #4facfe; }
         input:disabled { opacity: 0.5; }
         input.error { border-color: #e74c3c; background: #3a1c1c; color: #e74c3c; }
@@ -58,7 +61,7 @@
             1. Find tallet over 100 cm.<br>
             2. Gang tierne med 7 (fx 70 × 7 = 490).<br>
             3. Gang enerne med 7 (fx 4 × 7 = 28).<br>
-            4. Læg de to tal sammen for totalen.
+            4. Læg sammen (Auto-tjekker dit svar).
         </div>
         
         <div id="timer-container">
@@ -69,10 +72,10 @@
             Højde: <strong id="heightDisplay">--</strong> cm
         </div>
 
-        <div class="step"><label>1. Højde minus 100</label><input type="number" id="step1" autofocus></div>
-        <div class="step"><label>2. Tiere × 7</label><input type="number" id="step2" disabled></div>
-        <div class="step"><label>3. Enere × 7</label><input type="number" id="step3" disabled></div>
-        <div class="step"><label>4. Samlet total</label><input type="number" id="step4" disabled></div>
+        <div class="step"><label>1. Højde minus 100</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="step1" autofocus></div>
+        <div class="step"><label>2. Tiere × 7</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="step2" disabled></div>
+        <div class="step"><label>3. Enere × 7</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="step3" disabled></div>
+        <div class="step"><label>4. Samlet total</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="step4" disabled></div>
     </div>
 
     <script>
@@ -179,40 +182,48 @@
             }
         }
 
+        // Ændret fra 'keydown' (Enter) til 'input' (Auto-validering)
         inputs.forEach((input, index) => {
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    if (parseInt(this.value) === getExpectedValue(index)) {
-                        this.classList.remove('error');
-                        this.classList.add('success');
-                        this.disabled = true;
-                        
-                        if (index < 3) {
-                            inputs[index + 1].disabled = false;
-                            inputs[index + 1].focus();
-                        } else {
-                            clearInterval(timerInterval);
-                            streak++;
-                            document.getElementById('streakCount').innerText = streak;
-                            setTimeout(initGame, 400);
-                        }
-                    } else {
-                        attemptsLeft--;
-                        attemptsUI.innerText = attemptsLeft;
-                        
-                        appContainer.classList.add('shake-active');
-                        setTimeout(() => appContainer.classList.remove('shake-active'), 400);
+            input.addEventListener('input', function(e) {
+                const expected = getExpectedValue(index);
+                const currentValStr = this.value.trim();
+                
+                if (currentValStr === '') return; // Ignorer tomt felt hvis brugeren sletter alt
 
-                        if (attemptsLeft > 0) {
-                            this.classList.add('error');
-                            setTimeout(() => {
-                                this.classList.remove('error');
-                                this.value = '';
-                            }, 300);
-                        } else {
-                            clearInterval(timerInterval);
-                            failState("3 forkerte forsøg på én patient.");
-                        }
+                const expectedStr = expected.toString();
+
+                if (currentValStr === expectedStr) {
+                    // Svaret er præcis korrekt
+                    this.classList.remove('error');
+                    this.classList.add('success');
+                    this.disabled = true;
+                    
+                    if (index < 3) {
+                        inputs[index + 1].disabled = false;
+                        inputs[index + 1].focus();
+                    } else {
+                        clearInterval(timerInterval);
+                        streak++;
+                        document.getElementById('streakCount').innerText = streak;
+                        setTimeout(initGame, 300); // Hurtigere reset for flow
+                    }
+                } else if (currentValStr.length >= expectedStr.length) {
+                    // Forkert svar, og brugeren har tastet det forventede antal cifre
+                    attemptsLeft--;
+                    attemptsUI.innerText = attemptsLeft;
+                    
+                    appContainer.classList.add('shake-active');
+                    setTimeout(() => appContainer.classList.remove('shake-active'), 400);
+
+                    if (attemptsLeft > 0) {
+                        this.classList.add('error');
+                        setTimeout(() => {
+                            this.classList.remove('error');
+                            this.value = ''; // Ryd feltet, prøv igen
+                        }, 300);
+                    } else {
+                        clearInterval(timerInterval);
+                        failState("3 forkerte forsøg på én patient.");
                     }
                 }
             });
