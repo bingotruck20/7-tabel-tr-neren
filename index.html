@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anæstesi Hovedregning Pro - Adaptiv Stress</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #121212; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
+        .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; transition: transform 0.1s; }
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; color: #4facfe; }
+        .streak { text-align: center; font-weight: bold; color: #2ecc71; margin-bottom: 5px; font-size: 1.2rem; }
+        .status-text { text-align: center; font-size: 0.8rem; color: #aaa; margin-bottom: 15px; height: 15px; }
+        
+        /* Timer CSS */
+        #timer-container { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin-bottom: 20px; border: 1px solid #444; }
+        #timer-bar { width: 100%; height: 100%; background: #3498db; transition: width 0.1s linear, background-color 0.3s; }
+        
+        .patient-box { background: #2c3e50; text-align: center; padding: 20px; border-radius: 8px; font-size: 1.5rem; margin-bottom: 20px; border: 1px solid #4facfe; }
+        .step { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #aaa; }
+        input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 1.1rem; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #4facfe; }
+        input:disabled { opacity: 0.5; }
+        input.error { border-color: #e74c3c; background: #3a1c1c; color: #e74c3c; }
+        input.success { border-color: #2ecc71; background: #1c3a24; color: #2ecc71; }
+        
+        /* Visuel straf animation */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+        .shake-active { animation: shake 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app-container">
+        <h1>Adaptiv Dosisberegning</h1>
+        <div class="streak">🔥 Streak: <span id="streakCount">0</span></div>
+        <div class="status-text" id="statusText">Opvarmning (Ingen tidsgrænse)</div>
+        
+        <div id="timer-container">
+            <div id="timer-bar"></div>
+        </div>
+        
+        <div class="patient-box">
+            Højde: <strong id="heightDisplay">--</strong> cm
+        </div>
+
+        <div class="step"><label>1. Højde minus 100</label><input type="number" id="step1" autofocus></div>
+        <div class="step"><label>2. Tiere × 7</label><input type="number" id="step2" disabled></div>
+        <div class="step"><label>3. Enere × 7</label><input type="number" id="step3" disabled></div>
+        <div class="step"><label>4. Samlet total</label><input type="number" id="step4" disabled></div>
+    </div>
+
+    <script>
+        let hMinus100 = 0, tens = 0, ones = 0, streak = 0;
+        let currentTimeLimit = 12000; // Starttid for pres (12 sekunder)
+        let timeLeft = 0;
+        let timerInterval;
+
+        const inputs = [
+            document.getElementById('step1'),
+            document.getElementById('step2'),
+            document.getElementById('step3'),
+            document.getElementById('step4')
+        ];
+        const timerBar = document.getElementById('timer-bar');
+        const statusText = document.getElementById('statusText');
+        const appContainer = document.getElementById('app-container');
+
+        // Dynamisk tidsudregning: Reducerer tiden med 0.5 sek pr streak efter 5 (Min 6 sekunder)
+        function calculateTimeLimit() {
+            if (streak < 5) return 12000; 
+            const reduction = (streak - 5) * 500;
+            return Math.max(6000, 12000 - reduction);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            
+            if (streak < 5) {
+                // Opvarmningsfase
+                statusText.innerText = `Opvarmning: ${5 - streak} tilbage til skarp test`;
+                timerBar.style.width = '100%';
+                timerBar.style.background = '#3498db'; // Stationær blå
+                return;
+            }
+
+            // Aktiv stressfase
+            currentTimeLimit = calculateTimeLimit();
+            timeLeft = currentTimeLimit;
+            statusText.innerText = `AKTIV: ${(currentTimeLimit/1000).toFixed(1)} sekunder pr. patient`;
+            statusText.style.color = '#e74c3c';
+            updateTimerVisuals();
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= 100;
+                updateTimerVisuals();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    failState("Tiden randt ud!");
+                }
+            }, 100);
+        }
+
+        function updateTimerVisuals() {
+            const percentage = (timeLeft / currentTimeLimit) * 100;
+            timerBar.style.width = percentage + '%';
+            
+            if (percentage > 50) timerBar.style.background = '#2ecc71';
+            else if (percentage > 20) timerBar.style.background = '#f1c40f';
+            else timerBar.style.background = '#e74c3c';
+        }
+
+        function failState(reason) {
+            streak = 0;
+            document.getElementById('streakCount').innerText = streak;
+            statusText.style.color = '#aaa';
+            
+            inputs.forEach(input => { if(!input.disabled) input.classList.add('error'); });
+            
+            // Visuel straf
+            appContainer.classList.add('shake-active');
+            setTimeout(() => appContainer.classList.remove('shake-active'), 400);
+            
+            setTimeout(() => {
+                alert("Fejl: " + reason + "\nStreak nulstillet til opvarmning.");
+                initGame();
+            }, 500);
+        }
+
+        function initGame() {
+            const currentHeight = Math.floor(Math.random() * (205 - 140 + 1)) + 140;
+            hMinus100 = currentHeight - 100;
+            tens = Math.floor(hMinus100 / 10) * 10; 
+            ones = hMinus100 % 10;
+
+            document.getElementById('heightDisplay').innerText = currentHeight;
+
+            inputs.forEach((input, index) => {
+                input.value = '';
+                input.className = '';
+                input.disabled = index !== 0;
+            });
+            
+            inputs[0].focus();
+            startTimer();
+        }
+
+        function getExpectedValue(index) {
+            switch(index) {
+                case 0: return hMinus100;
+                case 1: return tens * 7;
+                case 2: return ones * 7;
+                case 3: return hMinus100 * 7;
+            }
+        }
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    if (parseInt(this.value) === getExpectedValue(index)) {
+                        this.classList.remove('error');
+                        this.classList.add('success');
+                        this.disabled = true;
+                        
+                        if (index < 3) {
+                            inputs[index + 1].disabled = false;
+                            inputs[index + 1].focus();
+                        } else {
+                            clearInterval(timerInterval);
+                            streak++;
+                            document.getElementById('streakCount').innerText = streak;
+                            setTimeout(initGame, 400); // Hurtigere progression
+                        }
+                    } else {
+                        clearInterval(timerInterval);
+                        failState("Forkert beregning");
+                    }
+                }
+            });
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
