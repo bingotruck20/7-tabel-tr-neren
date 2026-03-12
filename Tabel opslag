@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7-Tabellen - Hurtigt Overblik</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --accent: #e2e8f0;
+            --row-alt: #f1f5f9;
+            --row-hover: #e0f2fe;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #38bdf8;
+                --primary-hover: #7dd3fc;
+                --bg: #0f172a;
+                --card-bg: #1e293b;
+                --text: #f8fafc;
+                --accent: #334155;
+                --row-alt: #1e293b;
+                --row-hover: #0f172a;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0 0 10px 0;
+            color: var(--primary);
+        }
+
+        /* Hurtig-navigation */
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            background-color: rgba(var(--bg), 0.95);
+            backdrop-filter: blur(5px);
+            padding: 10px 0;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            border-bottom: 1px solid var(--accent);
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--accent);
+            overflow: hidden;
+            scroll-margin-top: 100px; /* Sikrer at headeren ikke dækker kortet ved scroll */
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            background-color: var(--accent);
+            padding: 12px 20px;
+            text-align: center;
+        }
+
+        .math-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .math-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 20px;
+            font-size: 1.1rem;
+            transition: background-color 0.1s;
+        }
+
+        .math-item:nth-child(even) {
+            background-color: var(--row-alt);
+        }
+
+        .math-item:hover {
+            background-color: var(--row-hover);
+            cursor: crosshair;
+        }
+
+        .equation {
+            color: var(--text);
+            opacity: 0.8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .sticky-nav {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                padding: 10px;
+            }
+            .nav-btn {
+                text-align: center;
+                padding: 8px 4px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>7-Tabellen</h1>
+    </header>
+
+    <div class="sticky-nav" id="nav-container">
+        </div>
+
+    <div class="container">
+        <div class="grid" id="table-container">
+            </div>
+    </div>
+
+<script>
+    const container = document.getElementById('table-container');
+    const navContainer = document.getElementById('nav-container');
+    const factor = 7;
+
+    for (let i = 0; i < 100; i += 10) {
+        const start = i + 1;
+        const end = i + 10;
+        const sectionId = `group-${start}`;
+        
+        // Generer Navigationsknap
+        const navLink = document.createElement('a');
+        navLink.href = `#${sectionId}`;
+        navLink.className = 'nav-btn';
+        navLink.innerText = `${start}-${end}`;
+        navContainer.appendChild(navLink);
+
+        // Generer Kort
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = sectionId;
+        
+        let html = `<h2>${start} - ${end}</h2><div class="math-list">`;
+        
+        for (let j = start; j <= end; j++) {
+            html += `
+                <div class="math-item">
+                    <span class="equation">${factor} &times; ${j}</span>
+                    <span class="result">${factor * j}</span>
+                </div>`;
+        }
+        
+        html += `</div>`;
+        card.innerHTML = html;
+        container.appendChild(card);
+    }
+</script>
+
+</body>
+</html>
